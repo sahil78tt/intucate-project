@@ -1,6 +1,7 @@
 import express from "express";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import connectDB from "./src/configs/db.js";
 
 dotenv.config({ quiet: true });
 
@@ -16,5 +17,6 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
+  connectDB();
   console.log(`Server is up and running on https://localhost:${PORT}`);
 });
