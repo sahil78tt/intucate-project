@@ -1,7 +1,8 @@
 import express from "express";
 import morgan from "morgan";
 import dotenv from "dotenv";
-import connectDB from "./src/configs/db.js";
+import connectDB from "./configs/db.js";
+import generateRoutes from "./routes/generate.routes.js";
 
 dotenv.config({ quiet: true });
 
@@ -15,6 +16,8 @@ app.use(morgan("dev"));
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Home Route" });
 });
+
+app.use("/generate", generateRoutes);
 
 app.listen(PORT, () => {
   connectDB();

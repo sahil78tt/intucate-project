@@ -13,4 +13,4 @@ const promptSchema = new mongoose.Schema({
 
 const prompt = mongoose.model("prompt", promptSchema);
 
-export default Prompt;
+export default prompt;
