@@ -61,10 +61,19 @@ export const generateMultiple = async (req, res) => {
   try {
     const userInput = req.body.userInput || req.body.userinput;
 
+    //Array Validation
     if (!Array.isArray(userInput) || userInput.length === 0) {
       return res.status(400).json({ message: "User input must be array" });
     }
 
+    //empty string check
+    if (userInput.some((item) => typeof item !== "string" || !item.trim())) {
+      return res.status(400).json({
+        message: "Invalid input",
+      });
+    }
+
+    // Used Promise.all for parallel processing and also mapped each prompt
     const result = await Promise.all(
       userInput.map(async (e) => {
         const existingPrompt = await prompt.findById("Education Prompt");
@@ -93,6 +102,7 @@ export const generateMultiple = async (req, res) => {
         const data = await groqResponse.json();
         const response = data.choices[0]?.message?.content;
 
+        // Saved in DB before reponding to user
         await new history({
           userInput: e,
           response: response,
