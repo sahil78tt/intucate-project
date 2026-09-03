@@ -1,152 +1,150 @@
-# Intucate Case Study — AI Prompt Generation API
+<h1 align="center">Intucate Case Study</h1>
 
-## Overview
+<p align="center">
+AI-powered prompt generation API - single and batch modes.
+</p>
 
-The Node.js backend that fetches a prompt template from MongoDB, populates it with the user’s input, sends it to the AI API (Groq, compatible with OpenAI), and records the request and response in a history collection. Part of the Intucate Full Stack Developer case study project.
+<p align="center">
+<img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white" />
+<img src="https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white" />
+<img src="https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=for-the-badge&logo=mongodb&logoColor=white" />
+<img src="https://img.shields.io/badge/Groq-LLM-F55036?style=for-the-badge" />
+</p>
+
+---
+
+## What is this?
+
+A backend API built for the IntuCATE Full Stack Developer case study. It fetches a stored prompt template from MongoDB, injects user input into it, sends it to Groq (OpenAI-compatible) for a response, and logs every request/response pair to a history collection — with a batch endpoint that processes multiple inputs concurrently.
+
+---
 
 ## Tech Stack
 
-- **Node.js + Express.js** — server and routing
-- **MongoDB + Mongoose** — data storage (prompts and history)
-- **Groq API** — AI response generation, called via native `fetch()` (no SDK)
+**Backend** — Node.js, Express, MongoDB (Mongoose), Groq API via native `fetch()`
 
 ### Why Node.js/Express/MongoDB instead of Python + Flask?
 
-In regards to tech stack, the case study FAQ made it clear that _"There is no strict requirement on the tech stack. Use what you are most comfortable and proficient with."_ This made me select Node.js, Express, and MongoDB as my best tech stack, which helped me concentrate on designing the back end of the application and proper asynchronous processing and coding, which are actually the parameters for evaluation.
+The case study FAQ allows flexibility: _"There is no strict requirement on the tech stack. Use what you are most comfortable and proficient with."_ I chose my strongest stack to focus on backend design, async handling, and code clarity — the stated evaluation criteria — instead of working in an unfamiliar language under time pressure.
+
+---
 
 ## Project Structure
 
 ```
-Intucate-Project/
-  src/
-    server.js
-    configs/
-      db.js
-    controllers/
-      generate.controllers.js
-    models/
-      prompts.js
-      history.js
-    routes/
-      generate.routes.js
-  .env
-  package.json
-  README.md
+intucate-Project/
+├── src/
+│   ├── server.js
+│   ├── configs/
+│   │   └── db.js
+│   ├── controllers/
+│   │   └── generate.controllers.js
+│   ├── models/
+│   │   ├── prompts.js
+│   │   └── history.js
+│   └── routes/
+│       └── generate.routes.js
+├── .env
+├── package.json
+└── README.md
 ```
 
-## Setup Instructions
+---
 
-1. Clone the repository:
+## API Reference
 
-   ```
-   git clone https://github.com/sahil78tt/intucate-project.git
-   cd intucate-project
-   ```
+| Method | Endpoint           | Description                                           |
+| ------ | ------------------ | ----------------------------------------------------- |
+| POST   | /generate          | Generate a single AI response                         |
+| POST   | /generate/multiple | Generate responses for a batch of inputs (concurrent) |
 
-2. Install dependencies:
+### `POST /generate`
 
-   ```
-   npm install
-   ```
+**Request:**
 
-3. Create a `.env` file in the root directory:
+```json
+{ "userInput": "How much should I score in each subject to pass CA final?" }
+```
 
-   ```
-   PORT=your_port
-   MONGO_URI=your_mongodb_connection_string
-   GROQ_API_KEY=your_groq_api_key
-   ```
+**Response:**
 
-4. Seed the `prompts` collection in MongoDB with the required document:
+```json
+{ "response": "..." }
+```
 
-   ```json
-   {
-     "_id": "Education Prompt",
-     "template": "You are an expert in education domain. Answer the following: {userInput}"
-   }
-   ```
+### `POST /generate/multiple`
 
-5. Run the server:
+**Request:**
 
-   ```
-   npm run dev
-   ```
+```json
+{ "userInput": ["What is JavaScript?", "What is Node.js?", "What is MongoDB?"] }
+```
 
-6. Server runs at `http://localhost:4600`
+**Response:**
 
-## MongoDB Structure
+```json
+{ "responses": ["...", "...", "..."] }
+```
+
+---
+
+## Concurrency — `Promise.all()`
+
+`.map()` fires the async callback for every input immediately, without waiting for the previous one to finish — each Groq call starts right away. Since none of these calls await on each other, they run **concurrently** instead of sequentially. `Promise.all()` waits for all of them and returns results in the **original input order**, regardless of which one resolves first.
+
+---
+
+## MongoDB
 
 **Database:** `intucate`
 
-**Collections:**
+| Collection  | Purpose                                                            |
+| ----------- | ------------------------------------------------------------------ |
+| `prompts`   | Stores templates, keyed by `_id`, with a `{userInput}` placeholder |
+| `histories` | Every request/response pair, auto-created per call                 |
 
-- `prompts` — stores prompt templates, keyed by `_id` (e.g. `"Education Prompt"`), with a `template` string containing a `{userInput}` placeholder.
-- `histories` — stores every request/response pair. Each document has `userInput` and `response` fields, created automatically as requests are processed. (Mongoose pluralizes the `history` model name to `histories` by default.)
+---
 
-## API Endpoints
+## Installation
 
-### 1. Generate Single Response
-
-`POST /generate`
-
-**Request body:**
-
-```json
-{
-  "userInput": "How much should I score in each subject to pass CA final?"
-}
+```bash
+git clone https://github.com/sahil78tt/intucate-project.git
+cd intucate-project
+npm install
 ```
 
-**Response:**
+**`.env`**
 
-```json
-{
-  "response": "..."
-}
+```
+MONGO_URI=your_mongodb_connection_string
+GROQ_API_KEY=your_groq_api_key
 ```
 
-**Flow:** validates input → fetches the `Education Prompt` template from MongoDB → replaces `{userInput}` with the actual input → calls the Groq API → saves the request/response pair to `history` → returns the response.
-
-### 2. Generate Multiple Responses
-
-`POST /generate/multiple`
-
-**Request body:**
-
-```json
-{
-  "userInput": ["What is JavaScript?", "What is Node.js?", "What is MongoDB?"]
-}
+```bash
+npm run dev
 ```
 
-**Response:**
+Server runs at `http://localhost:4600`
 
-```json
-{
-  "responses": ["...", "...", "..."]
-}
-```
-
-**Flow:** same as above, but for an array of inputs — each one is processed independently and concurrently.
-
-## Concurrency Explanation (`Promise.all`)
-
-Endpoint 2 uses `userInput.map(async (e) => { ... })` combined with `Promise.all()`.
-
-- `.map()` invokes the async callback for every input immediately, without waiting for the previous one to finish — each call starts its own fetch to the Groq API right away.
-- Since none of these calls `await` on each other, they run **concurrently** rather than sequentially, which is significantly faster than a `for` loop with `await` inside it.
-- `Promise.all()` waits for every promise to resolve and returns their results in an array that preserves the **original input order**, regardless of which request actually finishes first.
-
-This satisfies the requirement to process inputs asynchronously while still returning results in the same order they were received.
+---
 
 ## Error Handling
 
-- Missing or empty `userInput` → `400`
-- Prompt template not found in DB → `400`
-- Groq API failure → `400` (single) — a failure anywhere in the batch causes `Promise.all()` to reject, which is caught and handled centrally
-- Unexpected server errors → `500`
+- Missing/empty `userInput` → `400`
+- Invalid items in batch array (non-string / empty) → `400`
+- Prompt template not found → `400`
+- Groq API failure → `400` (single) / batch fails together via `Promise.all`
+- Unexpected errors → `500`
+
+---
 
 ## Notes
 
-- The OpenAI API was not used directly; Groq's OpenAI-compatible endpoint was used instead, as explicitly permitted by the case study FAQ ("a mock implementation, a free alternative... or any other approach you prefer").
-- The Groq SDK was intentionally avoided in favor of plain `fetch()` calls, to keep the request/response handling fully visible and explainable.
+- Used Groq's OpenAI-compatible endpoint instead of OpenAI directly — permitted by the FAQ ("a mock implementation, a free alternative... or any other approach you prefer").
+- Used plain `fetch()` instead of the Groq SDK to keep every request/response step visible and explainable.
+
+---
+
+<p align="center">
+Built by <a href="https://github.com/sahil78tt">Sahil Vishwakarma</a>
+</p>
