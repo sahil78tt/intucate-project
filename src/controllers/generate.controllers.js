@@ -46,9 +46,7 @@ export const generate = async (req, res) => {
       response: response,
     }).save();
 
-    res
-      .status(200)
-      .json({ message: "Prompt generated successfully", prompt: response });
+    res.status(200).json({ response });
   } catch (error) {
     console.log(`error in generate controller : ${error}`);
     res.status(500).json({ message: "Internal server error" });
@@ -59,9 +57,6 @@ export const generateMultiple = async (req, res) => {
   try {
     const { userInput } = req.body;
 
-    if (!userInput || userInput === "") {
-      return res.status(400).json({ message: "User input not found" });
-    }
     if (!Array.isArray(userInput) || userInput.length === 0) {
       return res.status(400).json({ message: "User input must be array" });
     }
@@ -88,7 +83,7 @@ export const generateMultiple = async (req, res) => {
         });
 
         if (!groqResponse.ok) {
-          throw new Error({ message: "Error fetching API" });
+          throw new Error("Error fetching API");
         }
 
         const data = await groqResponse.json();
@@ -103,10 +98,7 @@ export const generateMultiple = async (req, res) => {
       }),
     );
 
-    res.status(200).json({
-      message: "Multiple Prompt generated successfully",
-      responses: result,
-    });
+    res.status(200).json({ responses: result });
   } catch (error) {
     console.log(`Error handling mutiple response : ${error}`);
     res.status(500).json({ message: "Internal server error" });
