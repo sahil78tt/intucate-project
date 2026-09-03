@@ -5,7 +5,8 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 export const generate = async (req, res) => {
   try {
-    const { userInput } = req.body;
+    //Added both userinput and userInput as there is mismatch in Documents
+    const userInput = req.body.userInput || req.body.userinput;
 
     if (!userInput || userInput === "") {
       return res.status(400).json({ message: "User input not found" });
@@ -16,12 +17,14 @@ export const generate = async (req, res) => {
     if (!existingPrompt) {
       return res.status(400).json({ message: "Prompt not found" });
     }
-
+    // Prompt updating with userInput
     const updatedPrompt = existingPrompt.template.replace(
       "{userInput}",
       userInput,
     );
 
+    //Used GROQ as they provide free API keys
+    //All here comes from "https://console.groq.com/docs/overview"
     const groqResponse = await fetch(GROQ_URL, {
       method: "POST",
       headers: {
@@ -41,6 +44,7 @@ export const generate = async (req, res) => {
     const data = await groqResponse.json();
     const response = data.choices[0]?.message?.content;
 
+    //Saving history in Database
     await new history({
       userInput: userInput,
       response: response,
@@ -55,7 +59,7 @@ export const generate = async (req, res) => {
 
 export const generateMultiple = async (req, res) => {
   try {
-    const { userInput } = req.body;
+    const userInput = req.body.userInput || req.body.userinput;
 
     if (!Array.isArray(userInput) || userInput.length === 0) {
       return res.status(400).json({ message: "User input must be array" });

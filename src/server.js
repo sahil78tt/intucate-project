@@ -10,15 +10,19 @@ const app = express();
 
 const PORT = process.env.PORT;
 
+//Middlewares
 app.use(express.json());
 app.use(morgan("dev"));
 
+//Health check
 app.get("/", (req, res) => {
-  res.status(200).json({ message: "Home Route" });
+  res.status(200).json({ message: "Working fine" });
 });
 
+//Routes
 app.use("/generate", generateRoutes);
 
+//Server
 app.listen(PORT, () => {
   connectDB();
   console.log(`Server is up and running on https://localhost:${PORT}`);
